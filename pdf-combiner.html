@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ghép file PDF</title>
+<style>
+  :root{
+    --bg:#f5f4f0;
+    --surface:#ffffff;
+    --surface-2:#f0efe9;
+    --border:#ddd9d0;
+    --border-strong:#c4bfb2;
+    --text:#232220;
+    --text-secondary:#68655e;
+    --text-muted:#9b968a;
+    --accent:#185fa5;
+    --accent-bg:#e6f1fb;
+    --radius:8px;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:40px 16px;
+  }
+  .card{
+    width:100%;
+    max-width:560px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:28px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .brand img{
+    height:28px;
+    width:auto;
+    display:block;
+  }
+  .brand .wordmark{
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.2px;
+    color:var(--text);
+  }
+  h1{
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .sub{
+    font-size:13px;
+    color:var(--text-secondary);
+    margin:0 0 20px;
+  }
+  #drop{
+    border:1.5px dashed var(--border-strong);
+    border-radius:var(--radius);
+    padding:24px;
+    text-align:center;
+    cursor:pointer;
+    margin-bottom:16px;
+    transition:border-color .15s;
+  }
+  #drop:hover{ border-color:var(--accent); }
+  #drop svg{ width:26px; height:26px; color:var(--text-secondary); }
+  #drop p{ margin:8px 0 0; font-size:14px; color:var(--text-secondary); }
+  #fileInput{ display:none; }
+  #list{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  #empty{ font-size:13px; color:var(--text-muted); text-align:center; padding:8px 0 16px; }
+  .row{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:8px 10px; cursor:grab;
+  }
+  .row .grip{ color:var(--text-muted); font-size:14px; }
+  .row .num{ font-size:13px; color:var(--text-muted); width:18px; flex-shrink:0; }
+  .row .name-wrap{ flex:1; min-width:0; }
+  .row .name{ margin:0; font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row .size{ margin:0; font-size:12px; color:var(--text-muted); }
+  button.icon{
+    width:30px; height:30px; padding:0;
+    border:1px solid var(--border); background:var(--surface);
+    border-radius:var(--radius); cursor:pointer; color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+  }
+  button.icon:hover{ background:var(--surface-2); }
+  button.icon:disabled{ opacity:.35; cursor:default; }
+  .field-row{ display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .field-row label{ font-size:13px; color:var(--text-secondary); white-space:nowrap; }
+  .field-row input[type=text]{
+    flex:1; height:36px; border:1px solid var(--border); border-radius:var(--radius);
+    padding:0 10px; font-size:14px; color:var(--text); background:var(--surface);
+  }
+  .actions{ display:flex; gap:8px; }
+  #reverseBtn{
+    height:36px; padding:0 12px; border:1px solid var(--border); border-radius:var(--radius);
+    background:var(--surface); cursor:pointer; color:var(--text); font-size:13px; display:flex; align-items:center; gap:6px;
+  }
+  #reverseBtn:hover{ background:var(--surface-2); }
+  .list-toolbar{ display:flex; justify-content:flex-end; margin-bottom:8px; }
+  #combineBtn{
+    flex:1; height:40px; border:none; border-radius:var(--radius);
+    background:var(--accent); color:#fff; font-size:14px; font-weight:500; cursor:pointer;
+  }
+  #combineBtn:hover{ opacity:.92; }
+  #combineBtn:disabled{ opacity:.5; cursor:default; }
+  #clearBtn{
+    width:40px; height:40px; border:1px solid var(--border); border-radius:var(--radius);
+    background:var(--surface); cursor:pointer; color:var(--text);
+  }
+  #clearBtn:hover{ background:var(--surface-2); }
+  #status{ font-size:12px; color:var(--text-muted); margin-top:10px; min-height:16px; }
+  footer{ font-size:11px; color:var(--text-muted); text-align:center; margin-top:18px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">
+    <img src="LOGO_PLACEHOLDER" alt="MT Højgaard" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'" />
+    <span class="wordmark" style="display:none;">MT Højgaard</span>
+  </div>
+  <h1>Ghép file PDF</h1>
+  <p class="sub">Chọn nhiều file PDF, sắp xếp thứ tự, ghép thành một file duy nhất. Xử lý ngay trong trình duyệt, không upload lên đâu cả.</p>
+
+  <div id="drop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+    <p>Chọn file PDF hoặc kéo thả vào đây</p>
+    <input id="fileInput" type="file" accept="application/pdf,.pdf" multiple />
+  </div>
+
+  <div class="list-toolbar">
+    <button id="reverseBtn" title="Đảo ngược thứ tự hiện tại">⇅ Đảo ngược thứ tự</button>
+  </div>
+  <div id="list"></div>
+  <div id="empty">Chưa có file PDF nào được chọn.</div>
+
+  <div class="field-row">
+    <label for="outName">Tên file kết quả</label>
+    <input id="outName" type="text" placeholder="Combine" />
+  </div>
+
+  <div class="actions">
+    <button id="combineBtn">Ghép và tải về PDF</button>
+    <button id="clearBtn" aria-label="Xóa tất cả" title="Xóa tất cả">✕</button>
+  </div>
+
+  <p id="status"></p>
+  <footer>Chạy hoàn toàn phía client &middot; không gửi file lên server nào</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+let files = [];
+let dragIdx = null;
+
+const listEl = document.getElementById('list');
+const emptyEl = document.getElementById('empty');
+const fileInput = document.getElementById('fileInput');
+const drop = document.getElementById('drop');
+const statusEl = document.getElementById('status');
+const combineBtn = document.getElementById('combineBtn');
+
+function fmtSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function render(){
+  listEl.innerHTML = '';
+  emptyEl.style.display = files.length ? 'none' : 'block';
+  files.forEach((f, i) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.draggable = true;
+
+    row.addEventListener('dragstart', () => { dragIdx = i; row.style.opacity='0.5'; });
+    row.addEventListener('dragend', () => { row.style.opacity='1'; });
+    row.addEventListener('dragover', e => { e.preventDefault(); row.style.borderColor = 'var(--border-strong)'; });
+    row.addEventListener('dragleave', () => { row.style.borderColor = 'var(--border)'; });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.style.borderColor = 'var(--border)';
+      if(dragIdx === null || dragIdx === i) return;
+      const moved = files.splice(dragIdx, 1)[0];
+      files.splice(i, 0, moved);
+      dragIdx = null;
+      render();
+    });
+
+    const grip = document.createElement('span');
+    grip.className = 'grip';
+    grip.textContent = '⠿';
+
+    const num = document.createElement('span');
+    num.className = 'num';
+    num.textContent = (i+1) + '.';
+
+    const nameWrap = document.createElement('div');
+    nameWrap.className = 'name-wrap';
+    const name = document.createElement('p');
+    name.className = 'name';
+    name.textContent = f.name;
+    const size = document.createElement('p');
+    size.className = 'size';
+    size.textContent = fmtSize(f.size);
+    nameWrap.appendChild(name);
+    nameWrap.appendChild(size);
+
+    const upBtn = document.createElement('button');
+    upBtn.className = 'icon';
+    upBtn.innerHTML = '&#8593;';
+    upBtn.title = 'Di chuyển lên';
+    upBtn.disabled = i === 0;
+    upBtn.addEventListener('click', () => { if(i>0){ [files[i-1], files[i]] = [files[i], files[i-1]]; render(); } });
+
+    const downBtn = document.createElement('button');
+    downBtn.className = 'icon';
+    downBtn.innerHTML = '&#8595;';
+    downBtn.title = 'Di chuyển xuống';
+    downBtn.disabled = i === files.length - 1;
+    downBtn.addEventListener('click', () => { if(i<files.length-1){ [files[i+1], files[i]] = [files[i], files[i+1]]; render(); } });
+
+    const rmBtn = document.createElement('button');
+    rmBtn.className = 'icon';
+    rmBtn.innerHTML = '&times;';
+    rmBtn.title = 'Xóa file';
+    rmBtn.addEventListener('click', () => { files.splice(i,1); render(); });
+
+    row.appendChild(grip);
+    row.appendChild(num);
+    row.appendChild(nameWrap);
+    row.appendChild(upBtn);
+    row.appendChild(downBtn);
+    row.appendChild(rmBtn);
+    listEl.appendChild(row);
+  });
+}
+
+function addFiles(fileList){
+  for(const f of fileList){
+    if(f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) files.push(f);
+  }
+  files.sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' }));
+  render();
+}
+
+document.getElementById('reverseBtn').addEventListener('click', () => {
+  files.reverse();
+  render();
+});
+
+drop.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { addFiles(e.target.files); fileInput.value = ''; });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.borderColor = '#185fa5'; });
+drop.addEventListener('dragleave', () => { drop.style.borderColor = 'var(--border-strong)'; });
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.style.borderColor = 'var(--border-strong)';
+  if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => { files = []; render(); statusEl.textContent=''; });
+
+combineBtn.addEventListener('click', async () => {
+  if(files.length === 0){ statusEl.textContent = 'Chưa có file PDF nào để ghép.'; return; }
+  combineBtn.disabled = true;
+  statusEl.textContent = 'Đang ghép PDF...';
+  try{
+    if(!window.PDFLib){
+      statusEl.textContent = 'Không tải được thư viện xử lý PDF. Kiểm tra kết nối mạng và thử lại.';
+      combineBtn.disabled = false;
+      return;
+    }
+    const { PDFDocument } = window.PDFLib;
+    const mergedPdf = await PDFDocument.create();
+    for(const f of files){
+      const bytes = await f.arrayBuffer();
+      const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pages = await mergedPdf.copyPages(srcDoc, srcDoc.getPageIndices());
+      pages.forEach(p => mergedPdf.addPage(p));
+    }
+    const mergedBytes = await mergedPdf.save();
+    const rawName = document.getElementById('outName').value.trim();
+    const baseName = rawName || 'Combine';
+    const finalName = baseName.toLowerCase().endsWith('.pdf') ? baseName : baseName + '.pdf';
+    const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = finalName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    statusEl.textContent = 'Đã tải về: ' + finalName;
+  }catch(err){
+    statusEl.textContent = 'Ghép thất bại: ' + err.message;
+  }
+  combineBtn.disabled = false;
+});
+</script>
+</body>
+</html>
